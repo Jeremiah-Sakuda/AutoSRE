@@ -133,7 +133,9 @@ ruff format --check src dashboard tests
 
 - **Scaffolding:** Package layout, config, models, and stub implementations for all components.
 - **Phase 2:** Operations dashboard (FastAPI + static HTML) with login, services, Deployments panel, Rollback, and /api/health for recovery verification.
-- **Next:** Wire Nova Act for UI automation, recovery monitor to poll /api/health, real Slack publish.
+- **Phase 5:** Slack reporter: real publish via `slack_sdk.WebClient` and Block Kit; fallback text; no token/channel → skip.
+- **Phase 6:** Incident/log storage: `LogStore` records incidents, append_log/append_deployment, get_logs_for_incident and get_deployment_history with stub fallbacks; optional file persistence via `LOG_STORAGE_DATA_DIR`.
+- **Next:** Phase 7 (workflow hardening), Phase 8 (demo script).
 
 ---
 

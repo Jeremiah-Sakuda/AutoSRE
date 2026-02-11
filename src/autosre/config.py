@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     ui_stub: bool = True
     nova_act_api_key: str = ""
 
+    # Phase 6: incident / log storage (optional file persistence)
+    log_storage_data_dir: str = ""
+
 
 def get_settings() -> Settings:
     """Return loaded settings (singleton-style)."""

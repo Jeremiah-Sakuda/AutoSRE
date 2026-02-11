@@ -26,7 +26,7 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     Returns True if the cycle completed successfully.
     """
     settings = get_settings()
-    log_store = LogStore()
+    log_store = LogStore(data_dir=settings.log_storage_data_dir or None)
     reasoning = ReasoningAgent(use_bedrock=settings.reasoning_use_bedrock)
     planner = PlannerAgent()
     metrics_url = settings.metrics_url or (
@@ -45,6 +45,7 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     incident = next(stream, None)
     if not incident:
         return False
+    log_store.record_incident(incident)
 
     # 2. Root cause analysis (Nova)
     logs = log_store.get_logs_for_incident(incident)
