@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     operations_dashboard_url: str = "http://localhost:3000"
     incident_source: str = "simulated"
 
+    # UI automation (Nova Act): set False to use real browser; True for stub (CI/demo without browser)
+    ui_stub: bool = True
+    # Nova Act API key (optional; from nova.amazon.com/act); else uses AWS IAM
+    nova_act_api_key: str = ""
+
 
 def get_settings() -> Settings:
     """Return loaded settings (singleton-style)."""
