@@ -36,7 +36,7 @@ class LogStore:
     """
 
     def __init__(self, data_dir: str | None = None) -> None:
-        self._data_dir = (Path(data_dir) if data_dir else None)
+        self._data_dir = Path(data_dir) if data_dir else None
         self._incidents: list[dict] = []
         self._log_entries: list[dict] = []  # service_name, timestamp, message
         self._deployments: list[dict] = []  # service_name, version, timestamp, status
@@ -88,21 +88,23 @@ class LogStore:
                     incident_id=p["incident_id"],
                     incident_type=IncidentType(p["incident_type"]),
                     service_name=p["service_name"],
-                    detected_at=datetime.fromisoformat(
-                        p["detected_at"].replace("Z", "+00:00")
-                    ),
+                    detected_at=datetime.fromisoformat(p["detected_at"].replace("Z", "+00:00")),
                     raw_payload=p.get("raw_payload") or {},
                 )
         return None
 
-    def append_log(self, service_name: str, message: str, timestamp: datetime | None = None) -> None:
+    def append_log(
+        self, service_name: str, message: str, timestamp: datetime | None = None
+    ) -> None:
         """Append a log line for the given service (for RCA)."""
         ts = timestamp or datetime.utcnow()
-        self._log_entries.append({
-            "service_name": service_name,
-            "timestamp": _iso(ts),
-            "message": message,
-        })
+        self._log_entries.append(
+            {
+                "service_name": service_name,
+                "timestamp": _iso(ts),
+                "message": message,
+            }
+        )
         self._save(_LOG_ENTRIES_FILE, self._log_entries)
 
     def get_logs_for_incident(self, incident: IncidentEvent, window_seconds: int = 3600) -> str:
@@ -135,19 +137,28 @@ class LogStore:
     ) -> None:
         """Record a deployment event for a service."""
         ts = _iso(timestamp) if isinstance(timestamp, datetime) else str(timestamp)
-        self._deployments.append({
-            "service_name": service_name,
-            "version": version,
-            "timestamp": ts,
-            "status": status,
-        })
+        self._deployments.append(
+            {
+                "service_name": service_name,
+                "version": version,
+                "timestamp": ts,
+                "status": status,
+            }
+        )
         self._save(_DEPLOYMENTS_FILE, self._deployments)
 
     def get_deployment_history(self, service_name: str, limit: int = 5) -> list[dict]:
         """Return recent deployments for the service. Fallback to stub list if empty."""
         filtered = [d for d in self._deployments if d.get("service_name") == service_name]
         filtered.sort(key=lambda d: d.get("timestamp", ""), reverse=True)
-        result = [{"version": d.get("version"), "timestamp": d.get("timestamp"), "status": d.get("status")} for d in filtered[:limit]]
+        result = [
+            {
+                "version": d.get("version"),
+                "timestamp": d.get("timestamp"),
+                "status": d.get("status"),
+            }
+            for d in filtered[:limit]
+        ]
         if result:
             return result
         return STUB_DEPLOYMENTS.copy()

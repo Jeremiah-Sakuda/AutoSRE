@@ -15,7 +15,7 @@ from autosre.reasoning_agent.agent import (
 
 
 def test_parse_diagnosis_from_text_valid_json():
-    text = '''{"summary": "Memory leak in v1.4.2", "confidence": 0.9, "recommended_action": "rollback", "reasoning": "Logs point to deployment."}'''
+    text = """{"summary": "Memory leak in v1.4.2", "confidence": 0.9, "recommended_action": "rollback", "reasoning": "Logs point to deployment."}"""
     d = _parse_diagnosis_from_text(text)
     assert d is not None
     assert d.summary == "Memory leak in v1.4.2"
@@ -109,14 +109,12 @@ def test_reasoning_agent_bedrock_success(mock_get_client, sample_incident):
 
 
 @patch("autosre.reasoning_agent.agent._get_bedrock_client")
-def test_reasoning_agent_bedrock_invalid_response_returns_fallback(mock_get_client, sample_incident):
+def test_reasoning_agent_bedrock_invalid_response_returns_fallback(
+    mock_get_client, sample_incident
+):
     mock_client = MagicMock()
     mock_client.converse.return_value = {
-        "output": {
-            "message": {
-                "content": [{"text": "I'm not JSON, just prose."}]
-            }
-        }
+        "output": {"message": {"content": [{"text": "I'm not JSON, just prose."}]}}
     }
     mock_get_client.return_value = mock_client
 

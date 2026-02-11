@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # Phase 6: incident / log storage (optional file persistence)
     log_storage_data_dir: str = ""
 
+    # Phase 7: workflow hardening
+    reasoning_max_retries: int = 2
+    recovery_verify_timeout_seconds: float = 120.0
+
 
 def get_settings() -> Settings:
     """Return loaded settings (singleton-style)."""

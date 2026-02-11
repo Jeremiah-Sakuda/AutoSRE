@@ -135,7 +135,8 @@ ruff format --check src dashboard tests
 - **Phase 2:** Operations dashboard (FastAPI + static HTML) with login, services, Deployments panel, Rollback, and /api/health for recovery verification.
 - **Phase 5:** Slack reporter: real publish via `slack_sdk.WebClient` and Block Kit; fallback text; no token/channel → skip.
 - **Phase 6:** Incident/log storage: `LogStore` records incidents, append_log/append_deployment, get_logs_for_incident and get_deployment_history with stub fallbacks; optional file persistence via `LOG_STORAGE_DATA_DIR`.
-- **Next:** Phase 7 (workflow hardening), Phase 8 (demo script).
+- **Phase 7:** Workflow hardening: logging, try/except around record_incident/reasoning/verify/Slack; reasoning retries (`REASONING_MAX_RETRIES`); post-mortem on escalation, UI failure, or verify exception; config `recovery_verify_timeout_seconds`.
+- **Next:** Phase 8 (demo script).
 
 ---
 
