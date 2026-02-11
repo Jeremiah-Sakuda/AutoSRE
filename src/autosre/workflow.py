@@ -27,7 +27,11 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     log_store = LogStore()
     reasoning = ReasoningAgent(use_bedrock=settings.reasoning_use_bedrock)
     planner = PlannerAgent()
-    ui_agent = UIActionAgent(dashboard_url=settings.operations_dashboard_url)
+    ui_agent = UIActionAgent(
+        dashboard_url=settings.operations_dashboard_url,
+        use_nova_act=not settings.ui_stub,
+        api_key=settings.nova_act_api_key or None,
+    )
     monitor = RecoveryMonitor()
     slack = SlackReporter(bot_token=settings.slack_bot_token, channel_id=settings.slack_channel_id)
 
@@ -49,7 +53,7 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
         return False
 
     # 4. UI automation (Nova Act)
-    success = ui_agent.execute(actions)
+    success = ui_agent.execute(actions, service_name=incident.service_name)
     if not success:
         return False
 
