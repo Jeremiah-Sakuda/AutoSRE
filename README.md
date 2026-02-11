@@ -18,6 +18,9 @@ Instead of only alerting engineers, AutoSRE:
 
 ```
 AutoSRE/
+├── dashboard/             # Operations dashboard (Phase 2): login, services, rollback
+│   ├── app.py             # FastAPI app + API (health, rollback, services)
+│   └── static/            # login.html, services.html, service.html
 ├── src/autosre/
 │   ├── __init__.py
 │   ├── config.py           # Settings from env
@@ -56,7 +59,21 @@ AutoSRE/
 
    - `AWS_REGION` (and optional AWS credentials for Nova)
    - `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID` for post-mortems
-   - `OPERATIONS_DASHBOARD_URL` for UI automation target
+   - `OPERATIONS_DASHBOARD_URL` for UI automation target (default: http://localhost:3000)
+
+---
+
+## Operations dashboard (demo target)
+
+Start the dashboard so the agent (Nova Act) has a UI to drive:
+
+```bash
+cd dashboard
+python -m uvicorn app:app --host 0.0.0.0 --port 3000
+# or: python app.py
+```
+
+Then open http://localhost:3000. Use **Demo login**, open **Services** → **Checkout** → **Deployments** tab → **Rollback** on v1.4.1. The **GET /api/health** endpoint returns `degraded` until a rollback is executed, then `healthy` (for recovery verification).
 
 ---
 
@@ -97,7 +114,8 @@ AutoSRE/
 ## Status
 
 - **Scaffolding:** Package layout, config, models, and stub implementations for all components.
-- **Next:** Wire real Amazon Nova (reasoning + Act) APIs, optional operations dashboard, and real Slack publish.
+- **Phase 2:** Operations dashboard (FastAPI + static HTML) with login, services, Deployments panel, Rollback, and /api/health for recovery verification.
+- **Next:** Wire Nova Act for UI automation, recovery monitor to poll /api/health, real Slack publish.
 
 ---
 
