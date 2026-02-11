@@ -12,11 +12,17 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # AWS (Amazon Nova)
+    # AWS (Amazon Nova / Bedrock)
     aws_region: str = "us-east-1"
     # Optional: explicit credentials; otherwise use default chain
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
+    # Bedrock model for reasoning (Nova 2 Lite or Pro)
+    nova_model_id: str = "us.amazon.nova-2-lite-v1:0"
+    # Timeout for Bedrock Converse (Nova can take long for reasoning)
+    bedrock_read_timeout_seconds: int = 300
+    # Set true to call Bedrock Nova for reasoning; false uses stub (demo/CI without AWS)
+    reasoning_use_bedrock: bool = False
 
     # Slack
     slack_bot_token: str = ""
