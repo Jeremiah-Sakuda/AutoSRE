@@ -53,7 +53,9 @@ def test_service_detail_and_rollback(client):
 
 
 def test_login_redirects_to_services(client):
-    r = client.post("/api/login", json={"username": "demo", "password": "demo"}, follow_redirects=False)
+    r = client.post(
+        "/api/login", json={"username": "demo", "password": "demo"}, follow_redirects=False
+    )
     assert r.status_code == 303
     assert r.headers["location"] == "/services"
 

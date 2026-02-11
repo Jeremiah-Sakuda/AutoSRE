@@ -11,15 +11,25 @@ class PlannerAgent:
         action_map = {
             RecommendedAction.ROLLBACK: [
                 PlannedAction(action_type="navigate", target="deployment_panel", parameters={}),
-                PlannedAction(action_type="click_rollback", target="deployment_panel", parameters={"to_version": "v1.4.1"}),
+                PlannedAction(
+                    action_type="click_rollback",
+                    target="deployment_panel",
+                    parameters={"to_version": "v1.4.1"},
+                ),
             ],
             RecommendedAction.RESTART: [
                 PlannedAction(action_type="navigate", target="service_instances", parameters={}),
-                PlannedAction(action_type="restart_instance", target="service_instances", parameters={}),
+                PlannedAction(
+                    action_type="restart_instance", target="service_instances", parameters={}
+                ),
             ],
             RecommendedAction.SCALE_UP: [
                 PlannedAction(action_type="navigate", target="service_scaling", parameters={}),
-                PlannedAction(action_type="scale_replicas", target="service_scaling", parameters={"replicas": 4}),
+                PlannedAction(
+                    action_type="scale_replicas",
+                    target="service_scaling",
+                    parameters={"replicas": 4},
+                ),
             ],
             RecommendedAction.RESTART_DB_POOL: [
                 PlannedAction(action_type="navigate", target="db_pool", parameters={}),

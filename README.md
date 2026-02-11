@@ -77,6 +77,24 @@ Then open http://localhost:3000. Use **Demo login**, open **Services** → **Che
 
 ---
 
+## CI/CD
+
+GitHub Actions runs on push and pull requests to `main` (and the dashboard branch):
+
+- **Test:** Python 3.11 and 3.12; `pip install -e ".[dev]"` and `pytest tests/ -v`
+- **Lint:** `ruff check` and `ruff format --check` on `src`, `dashboard`, and `tests`
+
+Run locally:
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -v
+ruff check src dashboard tests
+ruff format --check src dashboard tests
+```
+
+---
+
 ## Run
 
 - **Single incident run (default: latency_spike)**

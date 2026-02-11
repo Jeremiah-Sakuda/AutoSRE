@@ -12,7 +12,9 @@ class RecoveryMonitor:
     Stub: waits briefly then returns RECOVERED for deterministic demo.
     """
 
-    def verify(self, incident_id: str, service_name: str, timeout_seconds: float = 120) -> RecoveryStatus:
+    def verify(
+        self, incident_id: str, service_name: str, timeout_seconds: float = 120
+    ) -> RecoveryStatus:
         """Poll until recovery signals or timeout. Returns recovery status."""
         # Stub: short wait then recovered
         time.sleep(1)

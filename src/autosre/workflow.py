@@ -5,8 +5,6 @@ Closed-loop autonomous operations workflow.
     → Health verification → Slack post-mortem
 """
 
-import time
-
 from autosre.config import get_settings
 from autosre.incident_detection import get_incident_stream
 from autosre.log_storage import LogStore
@@ -51,7 +49,6 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
         return False
 
     # 4. UI automation (Nova Act)
-    start = time.monotonic()
     success = ui_agent.execute(actions)
     if not success:
         return False

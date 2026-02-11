@@ -1,7 +1,5 @@
 """Smoke test for the full workflow (stub components)."""
 
-import pytest
-
 from autosre.models import IncidentType
 from autosre.workflow import run_once
 
