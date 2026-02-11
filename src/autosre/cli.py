@@ -20,8 +20,8 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.demo:
-        run_demo()
-        return 0
+        ok = run_demo()
+        return 0 if ok else 1
     incident_type = IncidentType(args.incident_type)
     ok = run_once(incident_type=incident_type)
     return 0 if ok else 1

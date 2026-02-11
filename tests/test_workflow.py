@@ -75,3 +75,30 @@ def test_run_once_verify_exception_returns_false_and_publishes(
     mock_slack.publish.assert_called_once()
     report = mock_slack.publish.call_args[0][0]
     assert report.recovery_time_seconds > 0  # timeout used as recovery_seconds
+
+
+@patch("autosre.workflow.get_incident_stream")
+@patch("autosre.workflow.RecoveryMonitor")
+def test_run_once_demo_uses_deterministic_incident_id(mock_monitor_class, mock_stream):
+    """When demo=True, get_incident_stream is called with incident_id=inc-demo0001."""
+    from autosre.incident_detection import DEMO_INCIDENT_ID
+    from autosre.models import IncidentEvent, IncidentType
+
+    mock_monitor = MagicMock()
+    mock_monitor.verify.return_value = RecoveryStatus.RECOVERED
+    mock_monitor.get_recovery_time_seconds.return_value = 92.0
+    mock_monitor_class.return_value = mock_monitor
+    mock_stream.return_value = iter([
+        IncidentEvent(
+            incident_id=DEMO_INCIDENT_ID,
+            incident_type=IncidentType.LATENCY_SPIKE,
+            service_name="checkout",
+        )
+    ])
+
+    result = run_once(incident_type=IncidentType.LATENCY_SPIKE, demo=True)
+    assert result is True
+    mock_stream.assert_called_once_with(
+        incident_type=IncidentType.LATENCY_SPIKE,
+        incident_id=DEMO_INCIDENT_ID,
+    )

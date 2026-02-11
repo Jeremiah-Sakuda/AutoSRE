@@ -105,14 +105,13 @@ ruff format --check src dashboard tests
   python -m autosre
   ```
 
-- **Demo scenario (deterministic for judges)**
+- **Demo scenario (deterministic)**
 
   ```bash
   autosre --demo
   ```
 
-  Flow: dashboard shows degraded service → alert fires → agent analyzes logs → states “Bad deployment detected” → navigates dashboard → clicks rollback → metrics recover → Slack report.
-
+  Runs one full cycle (alert → analyze → plan → act → verify → report) and prints the result. Optional narrative text can be supplied via a local file (see repo; not committed).
 ---
 
 ## Architecture (from PRD)
@@ -136,7 +135,7 @@ ruff format --check src dashboard tests
 - **Phase 5:** Slack reporter: real publish via `slack_sdk.WebClient` and Block Kit; fallback text; no token/channel → skip.
 - **Phase 6:** Incident/log storage: `LogStore` records incidents, append_log/append_deployment, get_logs_for_incident and get_deployment_history with stub fallbacks; optional file persistence via `LOG_STORAGE_DATA_DIR`.
 - **Phase 7:** Workflow hardening: logging, try/except around record_incident/reasoning/verify/Slack; reasoning retries (`REASONING_MAX_RETRIES`); post-mortem on escalation, UI failure, or verify exception; config `recovery_verify_timeout_seconds`.
-- **Next:** Phase 8 (demo script).
+- **Phase 8:** Demo script: `autosre --demo` runs deterministic scenario (incident id `inc-demo0001`). Narrative text is loaded from `demo_narrative.txt` when present (file is gitignored); otherwise minimal fallback text is used. CLI exits 0 on success and 1 on failure.
 
 ---
 

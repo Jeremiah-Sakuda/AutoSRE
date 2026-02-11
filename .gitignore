@@ -46,3 +46,6 @@ htmlcov/
 *.log
 logs/
 data/local/
+
+# Demo narrative (exact script for judges — keep out of repo)
+demo_narrative.txt

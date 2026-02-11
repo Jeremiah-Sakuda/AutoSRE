@@ -6,10 +6,11 @@ Closed-loop autonomous operations workflow.
 """
 
 import logging
+import os
 import time
 
 from autosre.config import get_settings
-from autosre.incident_detection import get_incident_stream
+from autosre.incident_detection import DEMO_INCIDENT_ID, get_incident_stream
 from autosre.log_storage import LogStore
 from autosre.models import Diagnosis, IncidentType, PostMortemReport, RecoveryStatus
 from autosre.planner import PlannerAgent
@@ -20,6 +21,36 @@ from autosre.slack_reporter import SlackReporter
 from autosre.ui_automation import UIActionAgent
 
 logger = logging.getLogger(__name__)
+
+# Demo narrative is loaded from demo_narrative.txt (gitignored) when present
+_DEMO_NARRATIVE_FILE = "demo_narrative.txt"
+
+
+def _load_demo_narrative() -> dict[str, str]:
+    """Load [section] blocks from demo_narrative.txt in cwd if present."""
+    out: dict[str, str] = {}
+    for path in (os.path.join(os.getcwd(), _DEMO_NARRATIVE_FILE),):
+        if not os.path.isfile(path):
+            continue
+        try:
+            raw = open(path, encoding="utf-8").read()
+        except OSError:
+            continue
+        section = None
+        lines: list[str] = []
+        for line in raw.splitlines():
+            line_stripped = line.strip()
+            if line_stripped.startswith("[") and line_stripped.endswith("]"):
+                if section is not None:
+                    out[section] = "\n".join(lines).strip()
+                section = line_stripped[1:-1].strip()
+                lines = []
+            elif section is not None:
+                lines.append(line)
+        if section is not None:
+            out[section] = "\n".join(lines).strip()
+        break
+    return out
 
 
 def _publish_report(slack: SlackReporter, report: PostMortemReport) -> None:
@@ -57,11 +88,15 @@ def _build_report(
     )
 
 
-def run_once(incident_type: IncidentType | None = None) -> bool:
+def run_once(
+    incident_type: IncidentType | None = None,
+    demo: bool = False,
+) -> bool:
     """
     Run one full cycle: detect one incident, diagnose, act, verify, report.
 
-    For demo pass incident_type=IncidentType.LATENCY_SPIKE.
+    For demo pass incident_type=IncidentType.LATENCY_SPIKE and demo=True for
+    deterministic incident id (inc-demo0001).
     Returns True if the cycle completed successfully (recovered). On escalation,
     UI failure, or verification failure still publishes a post-mortem when possible.
     """
@@ -81,7 +116,10 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     slack = SlackReporter(bot_token=settings.slack_bot_token, channel_id=settings.slack_channel_id)
 
     # 1. Incident detection
-    stream = get_incident_stream(incident_type=incident_type)
+    stream = get_incident_stream(
+        incident_type=incident_type,
+        incident_id=DEMO_INCIDENT_ID if demo else None,
+    )
     incident = next(stream, None)
     if not incident:
         logger.warning("No incident received")
@@ -168,8 +206,38 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     return status == RecoveryStatus.RECOVERED
 
 
-def run_demo() -> None:
-    """Deterministic demo scenario for judges: bad deployment → rollback → recovery."""
-    print("AutoSRE demo: bad deployment → rollback → recovery")
-    ok = run_once(incident_type=IncidentType.LATENCY_SPIKE)
-    print("Demo completed successfully." if ok else "Demo ended with failure or escalation.")
+def run_demo() -> bool:
+    """
+    Deterministic demo scenario. Narrative text is read from demo_narrative.txt
+    (gitignored) when present; otherwise minimal fallback text is used.
+    Returns True if the cycle completed successfully.
+    """
+    narrative = _load_demo_narrative()
+    intro = narrative.get("intro", "AutoSRE Demo")
+    scenario = narrative.get("scenario", "")
+    dashboard_note = narrative.get("dashboard_note", "")
+    running = narrative.get("running", "Running workflow...")
+    success_msg = narrative.get("success", "Result: Success.")
+    failure_msg = narrative.get("failure", "Result: Failed or escalated.")
+
+    print(intro)
+    if scenario:
+        print()
+        print(scenario)
+    print()
+
+    try:
+        import httpx
+        settings = get_settings()
+        url = settings.operations_dashboard_url.rstrip("/") + "/api/health"
+        httpx.get(url, timeout=2.0)
+    except Exception:
+        if dashboard_note:
+            print(dashboard_note)
+            print()
+
+    print(running)
+    ok = run_once(incident_type=IncidentType.LATENCY_SPIKE, demo=True)
+    print()
+    print(success_msg if ok else failure_msg)
+    return ok
