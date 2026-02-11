@@ -133,7 +133,8 @@ ruff format --check src dashboard tests
 
 - **Scaffolding:** Package layout, config, models, and stub implementations for all components.
 - **Phase 2:** Operations dashboard (FastAPI + static HTML) with login, services, Deployments panel, Rollback, and /api/health for recovery verification.
-- **Next:** Wire Nova Act for UI automation, recovery monitor to poll /api/health, real Slack publish.
+- **Phase 4:** Recovery verification: `RecoveryMonitor` polls `GET /api/health` until `status == "healthy"` or timeout; tracks recovery time from action start; stub when `metrics_url` empty.
+- **Next:** Real Slack publish (Phase 5).
 
 ---
 

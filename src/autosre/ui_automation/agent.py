@@ -14,7 +14,11 @@ class UIActionAgent:
     def __init__(self, dashboard_url: str = "http://localhost:3000") -> None:
         self.dashboard_url = dashboard_url
 
-    def execute(self, actions: list[PlannedAction]) -> bool:
+    def execute(
+        self,
+        actions: list[PlannedAction],
+        service_name: str | None = None,
+    ) -> bool:
         """Execute the list of planned actions. Returns True if all succeeded."""
         for action in actions:
             self._execute_one(action)

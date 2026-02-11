@@ -5,6 +5,8 @@ Closed-loop autonomous operations workflow.
     → Health verification → Slack post-mortem
 """
 
+import time
+
 from autosre.config import get_settings
 from autosre.incident_detection import get_incident_stream
 from autosre.log_storage import LogStore
@@ -28,7 +30,10 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     reasoning = ReasoningAgent(use_bedrock=settings.reasoning_use_bedrock)
     planner = PlannerAgent()
     ui_agent = UIActionAgent(dashboard_url=settings.operations_dashboard_url)
-    monitor = RecoveryMonitor()
+    metrics_url = settings.metrics_url or (
+        settings.operations_dashboard_url.rstrip("/") + "/api/health"
+    )
+    monitor = RecoveryMonitor(metrics_url=metrics_url)
     slack = SlackReporter(bot_token=settings.slack_bot_token, channel_id=settings.slack_channel_id)
 
     # 1. Incident detection
@@ -49,12 +54,17 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
         return False
 
     # 4. UI automation (Nova Act)
-    success = ui_agent.execute(actions)
+    action_start_time = time.monotonic()
+    success = ui_agent.execute(actions, service_name=incident.service_name)
     if not success:
         return False
 
     # 5. Recovery verification
-    status = monitor.verify(incident.incident_id, incident.service_name)
+    status = monitor.verify(
+        incident.incident_id,
+        incident.service_name,
+        action_start_time=action_start_time,
+    )
     recovery_seconds = monitor.get_recovery_time_seconds()
 
     # 6. Post-mortem to Slack

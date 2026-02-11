@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # Demo / operations dashboard
     operations_dashboard_url: str = "http://localhost:3000"
     incident_source: str = "simulated"
+    # Health/metrics URL for recovery verification (default: dashboard + /api/health)
+    metrics_url: str = ""
 
 
 def get_settings() -> Settings:
