@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # Demo / operations dashboard
     operations_dashboard_url: str = "http://localhost:3000"
     incident_source: str = "simulated"
+    # Health URL for recovery verification (default: dashboard + /api/health)
+    metrics_url: str = ""
+
+    # UI automation (Nova Act): True = stub only; False = use real browser
+    ui_stub: bool = True
+    nova_act_api_key: str = ""
 
 
 def get_settings() -> Settings:

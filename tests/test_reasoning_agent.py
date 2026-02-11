@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autosre.models import Diagnosis, IncidentEvent, IncidentType, RecommendedAction
+from autosre.models import IncidentEvent, IncidentType, RecommendedAction
 from autosre.reasoning_agent.agent import (
     ReasoningAgent,
     _extract_text_from_converse_response,
