@@ -27,7 +27,7 @@ def run_once(incident_type: IncidentType | None = None) -> bool:
     """
     settings = get_settings()
     log_store = LogStore()
-    reasoning = ReasoningAgent()
+    reasoning = ReasoningAgent(use_bedrock=settings.reasoning_use_bedrock)
     planner = PlannerAgent()
     ui_agent = UIActionAgent(dashboard_url=settings.operations_dashboard_url)
     monitor = RecoveryMonitor()
