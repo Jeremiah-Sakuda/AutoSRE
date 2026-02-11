@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Health/metrics URL for recovery verification (default: dashboard + /api/health)
     metrics_url: str = ""
 
+    # UI automation (Nova Act): set False to use real browser; True for stub (CI/demo without browser)
+    ui_stub: bool = True
+    # Nova Act API key (optional; from nova.amazon.com/act); else uses AWS IAM
+    nova_act_api_key: str = ""
+
 
 def get_settings() -> Settings:
     """Return loaded settings (singleton-style)."""
