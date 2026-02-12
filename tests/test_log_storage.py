@@ -30,6 +30,21 @@ def test_record_incident_and_get_incident():
     assert store.get_incident("nonexistent") is None
 
 
+def test_get_incident_invalid_detected_at_returns_none():
+    """When stored payload has invalid detected_at, get_incident returns None."""
+    store = LogStore()
+    store._incidents = [
+        {
+            "incident_id": "inc-bad",
+            "incident_type": "latency_spike",
+            "service_name": "checkout",
+            "detected_at": "not-a-valid-datetime",
+            "raw_payload": {},
+        }
+    ]
+    assert store.get_incident("inc-bad") is None
+
+
 def test_get_logs_for_incident_empty_returns_stub():
     store = LogStore()
     incident = IncidentEvent(

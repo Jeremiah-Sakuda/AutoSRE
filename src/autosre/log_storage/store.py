@@ -81,16 +81,25 @@ class LogStore:
         self._save(_INCIDENTS_FILE, self._incidents)
 
     def get_incident(self, incident_id: str) -> IncidentEvent | None:
-        """Return a stored incident by id, or None."""
+        """Return a stored incident by id, or None (also None if payload is invalid)."""
         for p in self._incidents:
-            if p.get("incident_id") == incident_id:
-                return IncidentEvent(
-                    incident_id=p["incident_id"],
-                    incident_type=IncidentType(p["incident_type"]),
-                    service_name=p["service_name"],
-                    detected_at=datetime.fromisoformat(p["detected_at"].replace("Z", "+00:00")),
-                    raw_payload=p.get("raw_payload") or {},
+            if p.get("incident_id") != incident_id:
+                continue
+            try:
+                detected_at_str = p.get("detected_at") or ""
+                detected_at = datetime.fromisoformat(
+                    str(detected_at_str).replace("Z", "+00:00")
                 )
+                incident_type = IncidentType(p["incident_type"])
+            except (ValueError, KeyError, TypeError):
+                return None
+            return IncidentEvent(
+                incident_id=p["incident_id"],
+                incident_type=incident_type,
+                service_name=p["service_name"],
+                detected_at=detected_at,
+                raw_payload=p.get("raw_payload") or {},
+            )
         return None
 
     def append_log(

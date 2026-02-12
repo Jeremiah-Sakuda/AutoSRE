@@ -67,9 +67,26 @@
           var tbody = document.getElementById('deployments-tbody');
           (data.deployments || []).forEach(function(d) {
             var tr = document.createElement('tr');
-            var version = d.version || '';
-            tr.innerHTML = '<td>' + version + '</td><td>' + (d.timestamp || '') + '</td><td>' + (d.status || '') + '</td><td>' +
-              '<button class="btn-rollback" type="button" data-version="' + version + '">Rollback</button></td>';
+            var version = String(d.version || '');
+            var timestamp = String(d.timestamp || '');
+            var status = String(d.status || '');
+            var tdVersion = document.createElement('td');
+            tdVersion.textContent = version;
+            var tdTimestamp = document.createElement('td');
+            tdTimestamp.textContent = timestamp;
+            var tdStatus = document.createElement('td');
+            tdStatus.textContent = status;
+            var tdAction = document.createElement('td');
+            var btn = document.createElement('button');
+            btn.className = 'btn-rollback';
+            btn.type = 'button';
+            btn.setAttribute('data-version', version);
+            btn.textContent = 'Rollback';
+            tdAction.appendChild(btn);
+            tr.appendChild(tdVersion);
+            tr.appendChild(tdTimestamp);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdAction);
             tbody.appendChild(tr);
           });
           tbody.addEventListener('click', function(e) {

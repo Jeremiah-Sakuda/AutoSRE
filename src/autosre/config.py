@@ -47,5 +47,5 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    """Return loaded settings (singleton-style)."""
+    """Return loaded settings from environment (and .env if present)."""
     return Settings()

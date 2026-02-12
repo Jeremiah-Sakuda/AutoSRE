@@ -33,7 +33,8 @@ def _load_demo_narrative() -> dict[str, str]:
         if not os.path.isfile(path):
             continue
         try:
-            raw = open(path, encoding="utf-8").read()
+            with open(path, encoding="utf-8") as f:
+                raw = f.read()
         except OSError:
             continue
         section = None
