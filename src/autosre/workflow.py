@@ -12,11 +12,13 @@ import time
 from autosre.config import get_settings
 from autosre.incident_detection import DEMO_INCIDENT_ID, get_incident_stream
 from autosre.log_storage import LogStore
+from autosre.log_storage.cloudwatch_logs import get_logs_for_incident_cloudwatch
 from autosre.models import Diagnosis, IncidentType, PostMortemReport, RecoveryStatus
 from autosre.planner import PlannerAgent
 from autosre.reasoning_agent import ReasoningAgent
 from autosre.reasoning_agent.agent import FALLBACK_DIAGNOSIS
 from autosre.recovery_verification import RecoveryMonitor
+from autosre.remediation import AWSExecutor
 from autosre.slack_reporter import SlackReporter
 from autosre.ui_automation import UIActionAgent
 
@@ -105,15 +107,28 @@ def run_once(
     log_store = LogStore(data_dir=settings.log_storage_data_dir or None)
     reasoning = ReasoningAgent(use_bedrock=settings.reasoning_use_bedrock)
     planner = PlannerAgent()
-    metrics_url = settings.metrics_url or (
-        settings.operations_dashboard_url.rstrip("/") + "/api/health"
-    )
-    monitor = RecoveryMonitor(metrics_url=metrics_url)
-    ui_agent = UIActionAgent(
-        dashboard_url=settings.operations_dashboard_url,
-        use_nova_act=not settings.ui_stub,
-        api_key=settings.nova_act_api_key or None,
-    )
+    use_aws = settings.use_aws_integration
+    if use_aws:
+        metrics_url = ""
+        monitor = RecoveryMonitor(
+            metrics_url=metrics_url,
+            use_aws_integration=True,
+            cloudwatch_alarm_names=settings.cloudwatch_alarm_names,
+            aws_region=settings.aws_region,
+        )
+        aws_executor = AWSExecutor()
+        ui_agent = None
+    else:
+        metrics_url = settings.metrics_url or (
+            settings.operations_dashboard_url.rstrip("/") + "/api/health"
+        )
+        monitor = RecoveryMonitor(metrics_url=metrics_url)
+        aws_executor = None
+        ui_agent = UIActionAgent(
+            dashboard_url=settings.operations_dashboard_url,
+            use_nova_act=not settings.ui_stub,
+            api_key=settings.nova_act_api_key or None,
+        )
     slack = SlackReporter(bot_token=settings.slack_bot_token, channel_id=settings.slack_channel_id)
 
     # 1. Incident detection
@@ -132,7 +147,12 @@ def run_once(
         logger.warning("Failed to record incident: %s", e, exc_info=True)
 
     # 2. Root cause analysis (Nova), with retries
-    logs = log_store.get_logs_for_incident(incident)
+    if use_aws:
+        logs = get_logs_for_incident_cloudwatch(incident)
+        if not logs:
+            logs = log_store.get_logs_for_incident(incident)
+    else:
+        logs = log_store.get_logs_for_incident(incident)
     deployment_history = log_store.get_deployment_history(incident.service_name)
     diagnosis: Diagnosis = FALLBACK_DIAGNOSIS
     max_attempts = 1 + max(0, settings.reasoning_max_retries)
@@ -162,18 +182,21 @@ def run_once(
         _publish_report(slack, report)
         return False
 
-    # 4. UI automation (Nova Act)
+    # 4. Execute actions (AWS executor or UI automation)
     action_start_time = time.monotonic()
-    success = ui_agent.execute(actions, service_name=incident.service_name)
+    if use_aws:
+        success = aws_executor.execute(actions, service_name=incident.service_name)
+    else:
+        success = ui_agent.execute(actions, service_name=incident.service_name)
     if not success:
-        logger.warning("UI automation failed; publishing report")
+        logger.warning("Action execution failed; publishing report")
         report = _build_report(
             incident.incident_id,
             incident.detected_at.isoformat(),
             diagnosis,
             0.0,
             RecoveryStatus.NOT_RECOVERED,
-            extra_timeline=["UI action execution failed."],
+            extra_timeline=["Action execution failed (UI or AWS)."],
         )
         _publish_report(slack, report)
         return False

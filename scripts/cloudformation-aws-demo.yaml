@@ -1,0 +1,86 @@
+# Minimal CloudFormation stack for AutoSRE Real AWS demo.
+# Creates: Lambda (Python), two versions, alias "live", CloudWatch alarm on Errors.
+# Deploy: aws cloudformation create-stack --stack-name autosre-demo --template-body file://scripts/cloudformation-aws-demo.yaml --capabilities CAPABILITY_IAM
+# Then: USE_AWS_INTEGRATION=true CLOUDWATCH_ALARM_NAMES=LambdaErrorsAlarm LAMBDA_FUNCTION_NAME=<LambdaFunctionName from output> autosre
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AutoSRE Real AWS demo - Lambda + alias + CloudWatch alarm"
+
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: autosre-demo-function
+    Description: Name of the Lambda function
+
+Resources:
+  DemoRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  DemoFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt DemoRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              # Healthy version; switch to a version that raises to trigger alarm
+              return {"statusCode": 200, "body": "OK"}
+      Description: "AutoSRE demo Lambda - rollback target"
+
+  DemoVersion:
+    Type: AWS::Lambda::Version
+    DependsOn: DemoFunction
+    Properties:
+      FunctionName: !Ref DemoFunction
+      Description: "Initial version for live alias"
+
+  LiveAlias:
+    Type: AWS::Lambda::Alias
+    DependsOn: DemoVersion
+    Properties:
+      FunctionName: !Ref DemoFunction
+      FunctionVersion: !GetAtt DemoVersion.Version
+      Name: live
+      Description: "Alias for rollback; agent updates this to previous version"
+
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${LambdaFunctionName}-errors"
+      AlarmDescription: "Lambda Errors for AutoSRE demo"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref DemoFunction
+      TreatMissingData: notBreaching
+
+Outputs:
+  LambdaFunctionName:
+    Description: Lambda function name for LAMBDA_FUNCTION_NAME
+    Value: !Ref LambdaFunctionName
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaFunctionName"
+  AlarmName:
+    Description: CloudWatch alarm name for CLOUDWATCH_ALARM_NAMES (use the alarm's physical name, e.g. stack-name-errors)
+    Value: !Ref LambdaErrorsAlarm
+    Export:
+      Name: !Sub "${AWS::StackName}-AlarmName"

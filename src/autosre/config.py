@@ -34,6 +34,17 @@ class Settings(BaseSettings):
     # Health URL for recovery verification (default: dashboard + /api/health)
     metrics_url: str = ""
 
+    # Real AWS integration (CloudWatch + Lambda); when True, agent uses real APIs instead of dashboard
+    use_aws_integration: bool = False
+    # CloudWatch alarm name(s) to treat as incident source (comma-separated for multiple)
+    cloudwatch_alarm_names: str = ""
+    # Lambda function name for rollback demo (used when use_aws_integration is True)
+    lambda_function_name: str = ""
+    # Lambda alias to roll back (e.g. live, prod); default "live"
+    lambda_alias_name: str = "live"
+    # CloudWatch Logs group for RCA (e.g. /aws/lambda/<name>); default derived from lambda_function_name if empty
+    lambda_log_group_name: str = ""
+
     # UI automation (Nova Act): True = stub only; False = use real browser
     ui_stub: bool = True
     nova_act_api_key: str = ""

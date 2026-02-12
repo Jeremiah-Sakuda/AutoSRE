@@ -23,6 +23,7 @@ Instead of only alerting engineers, AutoSRE:
 - [Environment variables](#environment-variables)
 - [Operations dashboard (demo target)](#operations-dashboard-demo-target)
 - [Running AutoSRE](#running-autosre)
+- [Real AWS demo (CloudWatch + Lambda)](#real-aws-demo-cloudwatch--lambda)
 - [Workflow (what happens in a run)](#workflow-what-happens-in-a-run)
 - [CI/CD](#cicd)
 - [Architecture](#architecture)
@@ -141,6 +142,12 @@ All settings are loaded from the environment (and from a `.env` file in the proj
 | `OPERATIONS_DASHBOARD_URL` | Base URL of the operations dashboard | `http://localhost:3000` |
 | `METRICS_URL` | Health URL for recovery verification; if empty, derived from `OPERATIONS_DASHBOARD_URL` + `/api/health` | `""` |
 | `INCIDENT_SOURCE` | Alert source (e.g. `simulated`) | `simulated` |
+| **Real AWS integration** | | |
+| `USE_AWS_INTEGRATION` | Set to `true` to use CloudWatch + Lambda instead of the dashboard (real API path) | `false` |
+| `CLOUDWATCH_ALARM_NAMES` | Comma-separated alarm names to treat as incident source | `""` |
+| `LAMBDA_FUNCTION_NAME` | Lambda function name for rollback demo (used when `USE_AWS_INTEGRATION=true`) | `""` |
+| `LAMBDA_ALIAS_NAME` | Lambda alias to roll back (e.g. `live`, `prod`) | `live` |
+| `LAMBDA_LOG_GROUP_NAME` | CloudWatch Logs group for RCA (default: `/aws/lambda/<LAMBDA_FUNCTION_NAME>`) | `""` |
 | **Log storage** | | |
 | `LOG_STORAGE_DATA_DIR` | Directory for persisting incidents/logs/deployments; empty = in-memory only | `""` |
 | **Workflow** | | |
@@ -237,6 +244,32 @@ autosre --demo
 ```bash
 autosre --version
 ```
+
+### Real AWS demo (CloudWatch + Lambda)
+
+When **`USE_AWS_INTEGRATION=true`**, the agent uses **real AWS APIs** instead of the simulated dashboard:
+
+- **Incidents** — CloudWatch Alarms in `ALARM` state (optionally filtered by `CLOUDWATCH_ALARM_NAMES`) are mapped to `IncidentEvent`.
+- **Logs** — CloudWatch Logs for the configured log group (e.g. `/aws/lambda/<LAMBDA_FUNCTION_NAME>`) are fetched for the incident time window and passed to the reasoning agent.
+- **Remediation** — For a rollback recommendation, the agent performs a **Lambda alias rollback** via boto3: the configured alias (e.g. `live`) is pointed to the previous published version.
+- **Verification** — Recovery is verified by polling CloudWatch until the configured alarm(s) return to `OK` state (or timeout).
+
+**Setup for a real AWS demo:**
+
+1. Deploy a small Lambda (e.g. Python) with at least two published versions and an alias (e.g. `live`) pointing to the current version.
+2. Create a CloudWatch alarm on that Lambda (e.g. Errors metric). Optionally trigger the alarm by invoking a failing version.
+3. Set in `.env`:
+   - `USE_AWS_INTEGRATION=true`
+   - `CLOUDWATCH_ALARM_NAMES=YourAlarmName`
+   - `LAMBDA_FUNCTION_NAME=your-function-name`
+   - `LAMBDA_ALIAS_NAME=live` (or your alias)
+   - `LAMBDA_LOG_GROUP_NAME=/aws/lambda/your-function-name` (optional; default derived from function name)
+4. Ensure AWS credentials have at least: `cloudwatch:DescribeAlarms`, `logs:FilterLogEvents`, `lambda:GetAlias`, `lambda:ListVersionsByFunction`, `lambda:UpdateAlias`.
+5. Run: `autosre`
+
+The agent will read the alarm, fetch Lambda logs, reason over them, and if it recommends rollback, update the alias via boto3; verification then waits for the alarm to return to OK.
+
+**IAM (minimal):** `cloudwatch:DescribeAlarms`, `logs:FilterLogEvents`, `lambda:GetAlias`, `lambda:ListVersionsByFunction`, `lambda:UpdateAlias`, `lambda:GetFunction` (optional for version listing).
 
 ---
 
